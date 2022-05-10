@@ -1,0 +1,19 @@
+{
+  "name": "puppeteer_order_bot",
+  "version": "1.0.0",
+  "description": "A puppeteer-based bot to make orders from a web store",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rickgladwin/puppeteer_order_bot.git"
+  },
+  "author": "Rick Gladwin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rickgladwin/puppeteer_order_bot/issues"
+  },
+  "homepage": "https://github.com/rickgladwin/puppeteer_order_bot#readme"
+}
