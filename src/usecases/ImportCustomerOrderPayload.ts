@@ -1,5 +1,5 @@
 import { CustomerOrder } from '../entities/CustomerOrder'
-import { config } from '../../startup'
+import { config } from '../startup'
 import { readFileSync } from 'fs'
 
 export const importCustomerOrders = async (payload_filename: string): Promise<Array<CustomerOrder>> => {

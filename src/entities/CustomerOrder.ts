@@ -1,3 +1,5 @@
+import { OrderItem } from "./OrderItem";
+
 export interface CustomerOrder {
     orderId: string,
     customerFirstName: string,
@@ -9,13 +11,7 @@ export interface CustomerOrder {
     deliveryNotes: string|null,
     paymentMethod: PaymentMethodEnum,
     paymentNotes: string,
-    items: Array<Item>,
-}
-
-export interface Item {
-    category: string,
-    subCategory: string|null,
-    itemName: string,
+    items: Array<OrderItem>,
 }
 
 export enum PaymentMethodEnum {

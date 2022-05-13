@@ -27,3 +27,10 @@ Run tests in watch mode
 
 ### About Packages
 
+### About OpenCart
+
+#### API Docs
+https://docs.opencart.com/en-gb/system/users/api/
+
+#### API route pattern
+http://opencart.abstracta.us/index.php?route=api/cart/add

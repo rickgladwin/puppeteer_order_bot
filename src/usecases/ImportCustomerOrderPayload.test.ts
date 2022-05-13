@@ -13,7 +13,11 @@ describe('importCustomerOrders', () => {
     })
     describe('rejects invalid inputs', () => {
         it.todo('rejects invalid order data')
-        it.todo('rejects an invalid order data source')
+        it('rejects an invalid order data source', async () => {
+            const payload_filename: string = 'invalid_filename.json'
+
+            await expect(importCustomerOrders(payload_filename)).rejects.toThrow('ENOENT')
+        })
     })
 })
 
