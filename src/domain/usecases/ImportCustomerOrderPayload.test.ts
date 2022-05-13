@@ -16,7 +16,11 @@ describe('parsePayload', () => {
 
         expect(parsedPayload).toMatchObject(payload_test_json)
     })
-    it.todo('rejects an invalid payload source')
+    it('rejects an invalid payload source', async () => {
+        const payload_filename: string = 'invalid_filename.json'
+
+        await expect(parsePayload(payload_filename)).rejects.toThrow('ENOENT')
+    })
 })
 
 // private

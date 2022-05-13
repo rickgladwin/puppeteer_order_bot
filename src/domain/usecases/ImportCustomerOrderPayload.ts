@@ -9,5 +9,11 @@ export const importCustomerOrders = (payload_file: string): Array<CustomerOrder>
 
 export const parsePayload = async (payload_file: string): Promise<any> => {
     const payloads_filepath = config.app_root_dir + config.payloads.payload_filepath
-    return await JSON.parse(readFileSync(payloads_filepath + '/' + payload_file).toString())
+    let parsedPayload: any
+    try {
+        parsedPayload = await JSON.parse(readFileSync(payloads_filepath + '/' + payload_file).toString())
+    } catch (e: any) {
+        throw new Error(`could not parse payload: ${e.message}`)
+    }
+    return parsedPayload
 }
