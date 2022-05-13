@@ -1,0 +1,4 @@
+payloads:
+  payload_filepath: /payloads
+logs:
+  order_log_filepath: /logs/order_log.log

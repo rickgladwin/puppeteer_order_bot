@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import { parsePayload } from "./ImportCustomerOrderPayload";
 
 describe('importCustomerOrders', () => {
@@ -10,23 +9,17 @@ describe('importCustomerOrders', () => {
 })
 
 describe('parsePayload', () => {
-    it('parses a customer order payload from a json file', () => {
-        // const payload_full_filepath: string = __dirname + '/../../../payloads/payload_test.json'
+    it('parses a customer order payload from a json file', async () => {
         const payload_filename: string = 'payload_test.json'
-        console.log(`payload_filename: ${payload_filename}`);
-        // const payload_json = JSON.parse(fs.readFileSync(payload_full_filepath).toString())
-        //
-        // console.log(`payload_json:`, payload_json);
 
-        const parsedPayload = parsePayload(payload_filename)
-
-        console.log(`parsedPayload:`, parsedPayload);
+        const parsedPayload = await parsePayload(payload_filename)
 
         expect(parsedPayload).toMatchObject(payload_test_json)
     })
     it.todo('rejects an invalid payload source')
 })
 
+// private
 const payload_test_json = [
     {
         "orderId": "ord_123",
