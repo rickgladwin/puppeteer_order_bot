@@ -12,4 +12,6 @@ const configFile = readFileSync('config/' + environment + '.yaml', 'utf8')
 export let config = parse(configFile)
 // const app_root_dir = process.cwd()
 config.app_root_dir = process.cwd()
+config.open_cart_email = process.env.OPEN_CART_EMAIL
+config.open_cart_password = process.env.OPEN_CART_PASSWORD
 // console.log(`&& config:`, config);
