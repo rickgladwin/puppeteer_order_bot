@@ -14,7 +14,7 @@ export interface CustomerOrder {
 
 export interface Item {
     category: string,
-    subCategory: string,
+    subCategory: string|null,
     itemName: string,
 }
 
