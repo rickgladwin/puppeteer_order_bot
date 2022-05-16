@@ -43,6 +43,12 @@
       {
         "category": "Cameras",
         "subCategory": null,
+        "itemOptions": [
+          {
+            "id": "input-option226",
+            "value": "15"
+          }
+        ],
         "itemName": "Canon EOS 5D"
       },
       {

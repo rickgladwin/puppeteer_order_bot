@@ -2,10 +2,10 @@ import { CustomerOrder } from "../entities/CustomerOrder";
 import { CustomerOrderResult } from "../entities/CustomerOrderResult";
 import { ValidationResult } from "../core/ValidationResult";
 import { OrderItem } from "../entities/OrderItem";
-import { string } from "yaml/dist/schema/common/string";
 
 export type OrderItemCategories = Array<Array<string>>
 
+// "incoming" order interface
 export interface CustomerOrderControllerInterface {
     placeOrder(order: CustomerOrder, store_url: string): CustomerOrderResult
     validateOrder(order: CustomerOrder): ValidationResult
@@ -14,6 +14,7 @@ export interface CustomerOrderControllerInterface {
     validateOrderItem(orderItem: OrderItem): ValidationResult
 }
 
+// "outgoing" order interface
 export interface CustomerOrderServiceInterface {
     accessStore(store_url: string): Promise<void>
     browseToItem(item_name: string, item_category?: string, item_subcategory?: string): Promise<void>
@@ -21,6 +22,7 @@ export interface CustomerOrderServiceInterface {
     checkout(): Promise<void>
 }
 
+// order facade
 export class CustomerOrderFacade {
     static placeOrder(order: CustomerOrder, store_url: string): CustomerOrderResult {
         let customerOrderResult: CustomerOrderResult = {
