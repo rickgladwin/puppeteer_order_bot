@@ -19,7 +19,7 @@ export interface CustomerOrderServiceInterface {
     accessStore(store_url: string): Promise<void>
     browseToItem(item_name: string, item_category?: string, item_subcategory?: string): Promise<void>
     addItemToCart(item_name: string, item_category?: string, item_subcategory?: string): Promise<void>
-    checkout(): Promise<void>
+    checkout(order: CustomerOrder): Promise<void>
 }
 
 // order facade

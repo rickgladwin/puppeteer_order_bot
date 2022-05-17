@@ -1,7 +1,10 @@
 import puppeteer, { Browser, Page } from 'puppeteer'
 import { config } from "../startup";
-import { ItemOption, OrderItem } from "../entities/OrderItem";
+import { ItemOption } from "../entities/OrderItem";
 import { CustomerOrderServiceInterface } from "./CustomerOrderFacade";
+import { CustomerOrder, PaymentMethodEnum } from "../entities/CustomerOrder";
+import stateValueMatcher from "../data/OpenCartPaymentStateValues.json"
+import { CustomerOrderResult } from "../entities/CustomerOrderResult";
 
 const puppeteerOptions = {
     headless: false,
@@ -10,6 +13,8 @@ const puppeteerOptions = {
 
 const openCartConfig = {
     url: 'https://opencart.abstracta.us/index.php?route=account/login',
+    checkoutUrl: 'https://opencart.abstracta.us/index.php?route=checkout/checkout',
+    accountOrdersUrl: 'https://opencart.abstracta.us/index.php?route=account/order',
     loginEmailXPath: './/*[@id="input-email"]',
     loginPasswordXPath: './/*[@id="input-password"]',
     loginSubmitXPath: './/*[@value="Login"]',
@@ -74,9 +79,12 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         }
         // set quantity
         const quantityXPath = this.quantityXPath()
-        await this.page.type(quantityXPath, '1')
+        await this.page.waitForXPath(quantityXPath);
+        await this.page.evaluate( () => { (document.getElementById('input-quantity') as HTMLInputElement).value = '1' })
+
         // add to cart
-        await this.page.$x(this.addToCartXPath())
+        const addToCartXPath = this.addToCartXPath();
+        await (await this.page.$x(addToCartXPath))[0].click()
     }
 
     async browseToItem (item_name: string, item_category: string, item_subcategory?: string, item_options?: Array<ItemOption>): Promise<void> {
@@ -94,21 +102,146 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
             await subCategoryNav.click()
         } else {
             // click category nav
-            await categoryNav.click()
+            await Promise.all([
+                this.page.waitForNavigation(),
+                await categoryNav.click()
+            ])
         }
 
         // click the item on the listing page
         const itemXPath = this.itemXPath(item_name)
-        const itemLink = (await this.page.$x(itemXPath))[0]
-        await itemLink.click()
+        console.log(`itemXPath:`, itemXPath);
+        await this.page.waitForXPath(itemXPath)
+        const itemLinks = await this.page.$x(itemXPath) // execution context is destroyed here
+        const itemLink = itemLinks[0]
+        await Promise.all([
+            this.page.waitForNavigation(),
+            await itemLink.click()
+        ])
 
         // TODO: finish PuppeteerService module
         // TODO: update the controller/facade to make use of this service
     }
 
-    async checkout (): Promise<void> {
+    async checkout (order: CustomerOrder): Promise<void> {
         await this.ensureInit()
-        return Promise.resolve(undefined);
+        // goto checkout page
+        await this.page.goto(openCartConfig.checkoutUrl)
+
+        // fill out Returning Customer login form
+        await this.page.type('#input-email', openCartConfig.loginEmail)
+        await this.page.type('#input-password', openCartConfig.loginPassword)
+        await this.page.click('#button-login')
+
+        // fill out new billing address
+        const newBillingAddressRadioXPath = this.newBillingAddressRadioXPath();
+        await this.page.waitForXPath(newBillingAddressRadioXPath, { timeout: 10000 })
+        await (await this.page.$x(newBillingAddressRadioXPath))[0].click()
+        await this.page.type('#input-payment-firstname', order.customerFirstName)
+        await this.page.type('#input-payment-lastname', order.customerLastName)
+        await this.page.type('#input-payment-address-1', order.customerAddress)
+        await this.page.type('#input-payment-city', order.customerCity)
+        // TODO: clear postcode first
+        await this.page.type('#input-payment-postcode', order.customerZip)
+        await this.page.select('#input-payment-country', "223") // United States
+        const matchedStateValue = this.inputPaymentZoneValue(order)
+        await this.page.select('#input-payment-zone', matchedStateValue)
+        await this.page.click('#button-payment-address')
+
+        // fill out new delivery address
+        const newDeliveryAddressRadioXPath = this.newDeliveryAddressRadioXPath();
+        await (await this.page.$x(newDeliveryAddressRadioXPath))[0].click()
+        await this.page.type('#input-shipping-firstname', order.customerFirstName)
+        await this.page.type('#input-shipping-lastname', order.customerLastName)
+        await this.page.type('#input-shipping-address-1', order.customerAddress)
+        await this.page.type('#input-shipping-city', order.customerCity)
+        // TODO: clear postcode first
+        await this.page.type('#input-shipping-postcode', order.customerZip)
+        await this.page.select('#input-shipping-country', "223") // United States
+        await this.page.select('#input-shipping-zone', matchedStateValue)
+        await this.page.click('#button-shipping-address')
+
+        // fill out delivery method/details
+        if (!!order.deliveryNotes) {
+            const shippingMethodCommentsXPath = this.shippingMethodCommentsXPath();
+            const shippingMethodComments = (await this.page.$x(shippingMethodCommentsXPath))[0];
+            await shippingMethodComments.type(order.deliveryNotes)
+        }
+        await this.page.click('#button-shipping-method')
+
+        // fill out payment method
+        let paymentMethodXPath: string
+        if (order.paymentMethod === PaymentMethodEnum.BANK) {
+            paymentMethodXPath = this.paymentMethodBankXPath()
+        } else if (order.paymentMethod === PaymentMethodEnum.CASH) {
+            paymentMethodXPath = this.paymentMethodCashXPath()
+        } else {
+            throw new Error(`payment method is not valid (${order.paymentMethod}`)
+        }
+        await (await this.page.$x(paymentMethodXPath))[0].click()
+        if (!!order.paymentNotes) {
+            const paymentMethodCommentsXPath = this.paymentMethodCommentsXPath();
+            const paymentMethodComments = (await this.page.$x(paymentMethodCommentsXPath))[0];
+            await paymentMethodComments.type(order.paymentNotes)
+        }
+
+        // agree to T&C
+        const tocCheckboxXPath = this.termsAndConditionsXPath();
+        const tocCheckbox = (await this.page.$x(tocCheckboxXPath))[0]
+        const tocIsChecked = await (await tocCheckbox.getProperty('checked')).jsonValue() as boolean
+        if (!tocIsChecked) {
+            await tocCheckbox.click()
+        }
+        await this.page.click('#button-payment-method')
+
+        // confirm order
+        const allItemsPresent = await this.allOrderItemsPresent(order)
+        if (!allItemsPresent) {
+            throw new Error(`not all customer order items appear in the confirm order table`)
+        }
+        await this.page.click('#button-confirm')
+    }
+
+    async fetchLatestOrderId(): Promise<string> {
+        await this.ensureInit()
+        await this.page.goto(openCartConfig.accountOrdersUrl)
+        const latestOrderIdElement = (await this.page.$x(this.latestAccountOrderIdXPath()))[0]
+        const latestOrderIdString = await latestOrderIdElement.evaluate(element => element.textContent) as string
+        return latestOrderIdString.replace('#', '')
+    }
+
+    async allOrderItemsPresent (order: CustomerOrder): Promise<boolean> {
+        const itemsInOrderTable = await this.page.$x(this.orderConfirmItemsXPath())
+        // confirm item count
+        if (order.items.length != itemsInOrderTable.length) {
+            return false
+        }
+        // confirm item presence
+        // for each item in order, check presence in confirm order table
+        let itemNamesInOrderTable = await Promise.all(itemsInOrderTable.map(async (itemInOrderTable) => {
+            return await itemInOrderTable.evaluate(element => element.textContent) as string
+        }))
+        order.items.forEach(item => {
+            if(!itemNamesInOrderTable.includes(item.itemName)) {
+                return false
+            }
+        })
+
+        return true
+    }
+
+    inputPaymentZoneValue (order: CustomerOrder): string {
+        const stateMatcher: Array<StateMatcherElement> = stateValueMatcher
+        console.log(`stateMatcher:`, stateMatcher);
+        const matchedState = stateMatcher.filter(matchObject => {
+            return matchObject.stateAbbreviation === order.customerState
+        })[0]
+
+        if (!matchedState) {
+            throw new Error(`customerState (${order.customerState}) does not match a checkout value`)
+        }
+
+        return matchedState.value
     }
 
     categoryXPath (category_name: string): string {
@@ -130,62 +263,93 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
     addToCartXPath (): string {
         return ".//button[@id='button-cart']"
     }
+
+    // checkoutButtonXPath (): string {
+    //     return ".//button[span/@id='cart-total']"
+    // }
+
+    // checkoutLinkXPath (): string {
+    //     return ".//a/strong[contains(text(),'Checkout')]"
+    // }
+
+    newBillingAddressRadioXPath (): string {
+        return ".//input[@name='payment_address'][@value='new']"
+    }
+
+    newDeliveryAddressRadioXPath (): string {
+        return ".//input[@name='shipping_address'][@value='new']"
+    }
+
+    shippingMethodCommentsXPath (): string {
+        return ".//*[@id='collapse-shipping-method']//textarea"
+    }
+
+    paymentMethodBankXPath (): string {
+        return ".//input[@name='payment_method'][@value='bank_transfer']"
+    }
+
+    paymentMethodCashXPath (): string {
+        return ".//input[@name='payment_method'][@value='cod']"
+    }
+
+    paymentMethodCommentsXPath (): string {
+        return ".//*[@id='collapse-payment-method']//textarea"
+    }
+
+    termsAndConditionsXPath (): string {
+        return ".//*[@id='collapse-payment-method']//input[@name='agree']"
+    }
+
+    orderConfirmItemsXPath (): string {
+        return ".//*[@id='collapse-checkout-confirm']//tr/td/a"
+    }
+
+    latestAccountOrderIdXPath (): string {
+        return "(.//*[@id='account-order']//*[@id='content']//table/tbody/tr)[1]/td[1]"
+    }
 }
 
-export const login = async (): Promise<void> => {
-    // visit login page
-    // console.log(`login called with page:`, page);
-    // console.log(`openCartConfig.loginEmail:`, openCartConfig.loginEmail);
-    // console.log(`openCartConfig.loginPassword:`, openCartConfig.loginPassword);
-    // await page.type(openCartConfig.loginEmailXPath, openCartConfig.loginEmail)
-    // await page.type(openCartConfig.loginPasswordXPath, openCartConfig.loginPassword)
-    // await page.type(openCartConfig.loginEmailId, openCartConfig.loginEmail)
-    // await page.waitForTimeout(3000)
-    // await page.type(openCartConfig.loginPasswordId, openCartConfig.loginPassword)
-    // await page.waitForTimeout(3000)
-    // const loginButton = (await page.$x(openCartConfig.loginSubmitXPath))[0]
-    // await loginButton.click()
-    // fill in login form
-    // submit login form
-    // await page.click()
+const sampleOrder = {
+"orderId": "ord_123",
+"customerFirstName": "Jeffrey",
+"customerLastName": "Martinez",
+"customerAddress": "887 Cedar Lane",
+"customerCity": "Cambridge",
+"customerState": "MA",
+"customerZip": "02141",
+"deliveryNotes": null,
+"paymentMethod": PaymentMethodEnum.CASH,
+"paymentNotes": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e iusmod tempor incididunt ut labore et dolore magna aliqua.",
+"items": [
+    {
+        "category": "Components",
+        "subCategory": "Monitors",
+        "itemName": "Samsung SyncMaster 941BW"
+    },
+],
 }
 
-const sampleItem = {
-    "category": "Cameras",
-    "subCategory": null,
-    "itemName": "Nikon D300"
+export type StateMatcherElement = {
+    value: string,
+    stateName: string,
+    stateAbbreviation: string,
 }
+
+// sample run
+// TODO: add "waitForXPath" etc. to slow the progress
+// TODO: build order result objects
+// TODO: run from outside the service provider
 
 export const main = async (): Promise<void> => {
     const puppeteerService = await new PuppeteerService().init()
     await puppeteerService.accessStore(openCartConfig.url)
-    await puppeteerService.browseToItem(sampleItem.itemName, sampleItem.category)
-    await puppeteerService.addItemToCart(sampleItem.itemName, sampleItem.category)
-
-
-
-    // browser = await puppeteer.launch(puppeteerOptions)
-    // console.log(`browser:`, browser);
-    // page = await browser.newPage()
-    // console.log(`page:`, page);
-    // await page.setViewport({
-    //     width: 800,
-    //     height: 800,
-    //     deviceScaleFactor: 1,
-    // });
-    // await page.goto(targetUrl)
-    // await page.waitForTimeout(3000)
-    // const componentsText = 'Components'
-    // const componentsNavXPath = ".//li/a[text()='" + componentsText + "']"
-    // const componentsNav = (await page.$x(componentsNavXPath))[0]
-    // await componentsNav.hover()
-    // const monitorsText = 'Monitors'
-    // const componentsSubNavXPath = ".//li//ul/li/a[contains(text(),'" + monitorsText + "')]"
-    // const componentsSubNav = (await page.$x(componentsSubNavXPath))[0]
-    // await componentsSubNav.hover()
-    // await login()
+    await puppeteerService.addItemToCart(sampleOrder.items[0].itemName, sampleOrder.items[0].category, sampleOrder.items[0].subCategory)
+    await puppeteerService.checkout(sampleOrder)
+    const accountOrderId = await puppeteerService.fetchLatestOrderId()
+    console.log(`accountOrderId:`, accountOrderId);
 }
 
+// perform the sample run if the PuppeteerService module is called directly
 if (require.main === module) {
-    main().then(r => {console.log(`done.`)})
+    main().then(r => {console.log(`done.`, r)})
 }

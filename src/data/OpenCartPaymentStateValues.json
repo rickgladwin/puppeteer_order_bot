@@ -1,0 +1,327 @@
+[
+  {
+    "value": "3613",
+    "stateName": "Alabama",
+    "stateAbbreviation": "AL"
+  },
+  {
+    "value": "3614",
+    "stateName": "Alaska",
+    "stateAbbreviation": "AK"
+  },
+  {
+    "value": "3615",
+    "stateName": "American Samoa",
+    "stateAbbreviation": "AS"
+  },
+  {
+    "value": "3616",
+    "stateName": "Arizona",
+    "stateAbbreviation": "AZ"
+  },
+  {
+    "value": "3617",
+    "stateName": "Arkansas",
+    "stateAbbreviation": "AR"
+  },
+  {
+    "value": "3618",
+    "stateName": "Armed Forces Africa",
+    "stateAbbreviation": "AFA"
+  },
+  {
+    "value": "3619",
+    "stateName": "Armed Forces Americas",
+    "stateAbbreviation": "AFA"
+  },
+  {
+    "value": "3620",
+    "stateName": "Armed Forces Canada",
+    "stateAbbreviation": "AFC"
+  },
+  {
+    "value": "3621",
+    "stateName": "Armed Forces Europe",
+    "stateAbbreviation": "AFE"
+  },
+  {
+    "value": "3622",
+    "stateName": "Armed Forces Middle East",
+    "stateAbbreviation": "AFM"
+  },
+  {
+    "value": "3623",
+    "stateName": "Armed Forces Pacific",
+    "stateAbbreviation": "AFP"
+  },
+  {
+    "value": "3624",
+    "stateName": "California",
+    "stateAbbreviation": "CA"
+  },
+  {
+    "value": "3625",
+    "stateName": "Colorado",
+    "stateAbbreviation": "CO"
+  },
+  {
+    "value": "3626",
+    "stateName": "Connecticut",
+    "stateAbbreviation": "CT"
+  },
+  {
+    "value": "3627",
+    "stateName": "Delaware",
+    "stateAbbreviation": "DE"
+  },
+  {
+    "value": "3628",
+    "stateName": "District of Columbia",
+    "stateAbbreviation": "DC"
+  },
+  {
+    "value": "3629",
+    "stateName": "Federated States Of Micronesia",
+    "stateAbbreviation": "FSM"
+  },
+  {
+    "value": "3630",
+    "stateName": "Florida",
+    "stateAbbreviation": "FL"
+  },
+  {
+    "value": "3631",
+    "stateName": "Georgia",
+    "stateAbbreviation": "GA"
+  },
+  {
+    "value": "3632",
+    "stateName": "Guam",
+    "stateAbbreviation": "GU"
+  },
+  {
+    "value": "3633",
+    "stateName": "Hawaii",
+    "stateAbbreviation": "HI"
+  },
+  {
+    "value": "3634",
+    "stateName": "Idaho",
+    "stateAbbreviation": "ID"
+  },
+  {
+    "value": "3635",
+    "stateName": "Illinois",
+    "stateAbbreviation": "IL"
+  },
+  {
+    "value": "3636",
+    "stateName": "Indiana",
+    "stateAbbreviation": "IN"
+  },
+  {
+    "value": "3637",
+    "stateName": "Iowa",
+    "stateAbbreviation": "IA"
+  },
+  {
+    "value": "3638",
+    "stateName": "Kansas",
+    "stateAbbreviation": "KS"
+  },
+  {
+    "value": "3639",
+    "stateName": "Kentucky",
+    "stateAbbreviation": "KY"
+  },
+  {
+    "value": "3640",
+    "stateName": "Louisiana",
+    "stateAbbreviation": "LA"
+  },
+  {
+    "value": "3641",
+    "stateName": "Maine",
+    "stateAbbreviation": "ME"
+  },
+  {
+    "value": "3642",
+    "stateName": "Marshall Islands",
+    "stateAbbreviation": "MIS"
+  },
+  {
+    "value": "3643",
+    "stateName": "Maryland",
+    "stateAbbreviation": "MD"
+  },
+  {
+    "value": "3644",
+    "stateName": "Massachusetts",
+    "stateAbbreviation": "MA"
+  },
+  {
+    "value": "3645",
+    "stateName": "Michigan",
+    "stateAbbreviation": "MI"
+  },
+  {
+    "value": "3646",
+    "stateName": "Minnesota",
+    "stateAbbreviation": "MN"
+  },
+  {
+    "value": "3647",
+    "stateName": "Mississippi",
+    "stateAbbreviation": "MS"
+  },
+  {
+    "value": "3648",
+    "stateName": "Missouri",
+    "stateAbbreviation": "MO"
+  },
+  {
+    "value": "3649",
+    "stateName": "Montana",
+    "stateAbbreviation": "MT"
+  },
+  {
+    "value": "3650",
+    "stateName": "Nebraska",
+    "stateAbbreviation": "NE"
+  },
+  {
+    "value": "3651",
+    "stateName": "Nevada",
+    "stateAbbreviation": "NV"
+  },
+  {
+    "value": "3652",
+    "stateName": "New Hampshire",
+    "stateAbbreviation": "NH"
+  },
+  {
+    "value": "3653",
+    "stateName": "New Jersey",
+    "stateAbbreviation": "NJ"
+  },
+  {
+    "value": "3654",
+    "stateName": "New Mexico",
+    "stateAbbreviation": "NM"
+  },
+  {
+    "value": "3655",
+    "stateName": "New York",
+    "stateAbbreviation": "NY"
+  },
+  {
+    "value": "3656",
+    "stateName": "North Carolina",
+    "stateAbbreviation": "NC"
+  },
+  {
+    "value": "3657",
+    "stateName": "North Dakota",
+    "stateAbbreviation": "ND"
+  },
+  {
+    "value": "3658",
+    "stateName": "Northern Mariana Islands",
+    "stateAbbreviation": "CM"
+  },
+  {
+    "value": "3659",
+    "stateName": "Ohio",
+    "stateAbbreviation": "OH"
+  },
+  {
+    "value": "3660",
+    "stateName": "Oklahoma",
+    "stateAbbreviation": "OK"
+  },
+  {
+    "value": "3661",
+    "stateName": "Oregon",
+    "stateAbbreviation": "OR"
+  },
+  {
+    "value": "3662",
+    "stateName": "Palau",
+    "stateAbbreviation": "PL"
+  },
+  {
+    "value": "3663",
+    "stateName": "Pennsylvania",
+    "stateAbbreviation": "PA"
+  },
+  {
+    "value": "3664",
+    "stateName": "Puerto Rico",
+    "stateAbbreviation": "PR"
+  },
+  {
+    "value": "3665",
+    "stateName": "Rhode Island",
+    "stateAbbreviation": "RI"
+  },
+  {
+    "value": "3666",
+    "stateName": "South Carolina",
+    "stateAbbreviation": "SC"
+  },
+  {
+    "value": "3667",
+    "stateName": "South Dakota",
+    "stateAbbreviation": "SD"
+  },
+  {
+    "value": "3668",
+    "stateName": "Tennessee",
+    "stateAbbreviation": "TN"
+  },
+  {
+    "value": "3669",
+    "stateName": "Texas",
+    "stateAbbreviation": "TX"
+  },
+  {
+    "value": "3670",
+    "stateName": "Utah",
+    "stateAbbreviation": "UT"
+  },
+  {
+    "value": "3671",
+    "stateName": "Vermont",
+    "stateAbbreviation": "VT"
+  },
+  {
+    "value": "3672",
+    "stateName": "Virgin Islands",
+    "stateAbbreviation": "VI"
+  },
+  {
+    "value": "3673",
+    "stateName": "Virginia",
+    "stateAbbreviation": "VA"
+  },
+  {
+    "value": "3674",
+    "stateName": "Washington",
+    "stateAbbreviation": "WA"
+  },
+  {
+    "value": "3675",
+    "stateName": "West Virginia",
+    "stateAbbreviation": "WV"
+  },
+  {
+    "value": "3676",
+    "stateName": "Wisconsin",
+    "stateAbbreviation": "WI"
+  },
+  {
+    "value": "3677",
+    "stateName": "Wyoming",
+    "stateAbbreviation": "WY"
+  }
+]
