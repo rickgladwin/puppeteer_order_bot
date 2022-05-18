@@ -11,7 +11,7 @@ const puppeteerOptions = {
     height: 800,
 }
 
-const openCartConfig = {
+export const openCartConfig = {
     url: 'https://opencart.abstracta.us/index.php?route=account/login',
     checkoutUrl: 'https://opencart.abstracta.us/index.php?route=checkout/checkout',
     accountOrdersUrl: 'https://opencart.abstracta.us/index.php?route=account/order',
@@ -23,18 +23,6 @@ const openCartConfig = {
     loginEmail: config.open_cart_email as string,
     loginPassword: config.open_cart_password as string,
 }
-
-// export let browser: Browser
-// export let page: Page
-
-// export const launchBrowser = async (): Promise<void> => {
-//     browser = await puppeteer.launch(puppeteerOptions)
-// }
-
-// export const visitPage = async (targetUrl: string = 'https://opencart.abstracta.us/index.php?route=account/login'): Promise<void> => {
-//     page = await browser.newPage()
-//     await page.goto(targetUrl)
-// }
 
 export class PuppeteerService implements CustomerOrderServiceInterface {
     browser!: Browser
@@ -91,6 +79,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.ensureInit()
         // target category nav
         const categoryXPath = this.categoryXPath(item_category)
+        await this.page.waitForXPath(categoryXPath, { timeout: 10000 })
         const categoryNav = (await this.page.$x(categoryXPath))[0]
 
         // click through to item listing page
@@ -110,9 +99,8 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
 
         // click the item on the listing page
         const itemXPath = this.itemXPath(item_name)
-        console.log(`itemXPath:`, itemXPath);
         await this.page.waitForXPath(itemXPath)
-        const itemLinks = await this.page.$x(itemXPath) // execution context is destroyed here
+        const itemLinks = await this.page.$x(itemXPath)
         const itemLink = itemLinks[0]
         await Promise.all([
             this.page.waitForNavigation(),
@@ -129,11 +117,13 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.page.goto(openCartConfig.checkoutUrl)
 
         // fill out Returning Customer login form
+        await this.page.waitForSelector('#button-login')
         await this.page.type('#input-email', openCartConfig.loginEmail)
         await this.page.type('#input-password', openCartConfig.loginPassword)
         await this.page.click('#button-login')
 
         // fill out new billing address
+        await this.page.waitForSelector('#button-payment-address')
         const newBillingAddressRadioXPath = this.newBillingAddressRadioXPath();
         await this.page.waitForXPath(newBillingAddressRadioXPath, { timeout: 10000 })
         await (await this.page.$x(newBillingAddressRadioXPath))[0].click()
@@ -141,27 +131,30 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.page.type('#input-payment-lastname', order.customerLastName)
         await this.page.type('#input-payment-address-1', order.customerAddress)
         await this.page.type('#input-payment-city', order.customerCity)
-        // TODO: clear postcode first
+        await this.page.evaluate( () => (document.getElementById('input-payment-postcode') as HTMLInputElement).value = '')
         await this.page.type('#input-payment-postcode', order.customerZip)
         await this.page.select('#input-payment-country', "223") // United States
         const matchedStateValue = this.inputPaymentZoneValue(order)
+        console.log(`matchedStateValue: ${matchedStateValue}`);
         await this.page.select('#input-payment-zone', matchedStateValue)
         await this.page.click('#button-payment-address')
 
         // fill out new delivery address
+        await this.page.waitForSelector('#button-shipping-address')
         const newDeliveryAddressRadioXPath = this.newDeliveryAddressRadioXPath();
         await (await this.page.$x(newDeliveryAddressRadioXPath))[0].click()
         await this.page.type('#input-shipping-firstname', order.customerFirstName)
         await this.page.type('#input-shipping-lastname', order.customerLastName)
         await this.page.type('#input-shipping-address-1', order.customerAddress)
         await this.page.type('#input-shipping-city', order.customerCity)
-        // TODO: clear postcode first
+        await this.page.evaluate( () => (document.getElementById('input-shipping-postcode') as HTMLInputElement).value = '')
         await this.page.type('#input-shipping-postcode', order.customerZip)
         await this.page.select('#input-shipping-country', "223") // United States
         await this.page.select('#input-shipping-zone', matchedStateValue)
         await this.page.click('#button-shipping-address')
 
         // fill out delivery method/details
+        await this.page.waitForSelector('#button-shipping-method')
         if (!!order.deliveryNotes) {
             const shippingMethodCommentsXPath = this.shippingMethodCommentsXPath();
             const shippingMethodComments = (await this.page.$x(shippingMethodCommentsXPath))[0];
@@ -178,6 +171,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         } else {
             throw new Error(`payment method is not valid (${order.paymentMethod}`)
         }
+        await this.page.waitForXPath(paymentMethodXPath)
         await (await this.page.$x(paymentMethodXPath))[0].click()
         if (!!order.paymentNotes) {
             const paymentMethodCommentsXPath = this.paymentMethodCommentsXPath();
@@ -186,6 +180,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         }
 
         // agree to T&C
+        await this.page.waitForSelector('#button-payment-method')
         const tocCheckboxXPath = this.termsAndConditionsXPath();
         const tocCheckbox = (await this.page.$x(tocCheckboxXPath))[0]
         const tocIsChecked = await (await tocCheckbox.getProperty('checked')).jsonValue() as boolean
@@ -195,6 +190,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.page.click('#button-payment-method')
 
         // confirm order
+        await this.page.waitForSelector('#button-confirm')
         const allItemsPresent = await this.allOrderItemsPresent(order)
         if (!allItemsPresent) {
             throw new Error(`not all customer order items appear in the confirm order table`)
@@ -205,12 +201,16 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
     async fetchLatestOrderId(): Promise<string> {
         await this.ensureInit()
         await this.page.goto(openCartConfig.accountOrdersUrl)
-        const latestOrderIdElement = (await this.page.$x(this.latestAccountOrderIdXPath()))[0]
+        const latestAccountOrderIdXPath = this.latestAccountOrderIdXPath()
+        await this.page.waitForXPath(latestAccountOrderIdXPath)
+        const latestOrderIdElement = (await this.page.$x(latestAccountOrderIdXPath))[0]
         const latestOrderIdString = await latestOrderIdElement.evaluate(element => element.textContent) as string
         return latestOrderIdString.replace('#', '')
     }
 
     async allOrderItemsPresent (order: CustomerOrder): Promise<boolean> {
+        const orderConfirmItemsXPath = this.orderConfirmItemsXPath()
+        await this.page.waitForXPath(orderConfirmItemsXPath)
         const itemsInOrderTable = await this.page.$x(this.orderConfirmItemsXPath())
         // confirm item count
         if (order.items.length != itemsInOrderTable.length) {
@@ -232,7 +232,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
 
     inputPaymentZoneValue (order: CustomerOrder): string {
         const stateMatcher: Array<StateMatcherElement> = stateValueMatcher
-        console.log(`stateMatcher:`, stateMatcher);
+        // console.log(`stateMatcher:`, stateMatcher);
         const matchedState = stateMatcher.filter(matchObject => {
             return matchObject.stateAbbreviation === order.customerState
         })[0]
@@ -336,7 +336,6 @@ export type StateMatcherElement = {
 }
 
 // sample run
-// TODO: add "waitForXPath" etc. to slow the progress
 // TODO: build order result objects
 // TODO: run from outside the service provider
 

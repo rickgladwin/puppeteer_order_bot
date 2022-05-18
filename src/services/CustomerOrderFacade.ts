@@ -2,16 +2,18 @@ import { CustomerOrder } from "../entities/CustomerOrder";
 import { CustomerOrderResult } from "../entities/CustomerOrderResult";
 import { ValidationResult } from "../core/ValidationResult";
 import { OrderItem } from "../entities/OrderItem";
+import { openCartConfig, PuppeteerService } from "./PuppeteerService";
+import openCartItemCategories from "../data/OpenCartItemCategories.json"
 
 export type OrderItemCategories = Array<Array<string>>
 
 // "incoming" order interface
 export interface CustomerOrderControllerInterface {
-    placeOrder(order: CustomerOrder, store_url: string): CustomerOrderResult
     validateOrder(order: CustomerOrder): ValidationResult
+    validateOrderItem(orderItem: OrderItem): ValidationResult
+    placeOrder(order: CustomerOrder): Promise<CustomerOrderResult>
     // fetchOrderItemCategories(store_url: string): OrderItemCategories
     // saveOrderItemCategories(categories: OrderItemCategories): void
-    validateOrderItem(orderItem: OrderItem): ValidationResult
 }
 
 // "outgoing" order interface
@@ -20,35 +22,51 @@ export interface CustomerOrderServiceInterface {
     browseToItem(item_name: string, item_category?: string, item_subcategory?: string): Promise<void>
     addItemToCart(item_name: string, item_category?: string, item_subcategory?: string): Promise<void>
     checkout(order: CustomerOrder): Promise<void>
+    fetchLatestOrderId(): Promise<string>
 }
 
 // order facade
 export class CustomerOrderFacade {
-    static placeOrder(order: CustomerOrder, store_url: string): CustomerOrderResult {
-        let customerOrderResult: CustomerOrderResult = {
-            orderId: '123',
-            externalOrderId: '1234',
+    static async placeOrder (order: CustomerOrder): Promise<CustomerOrderResult> {
+        let customerOrderResult: CustomerOrderResult
+        const customerOrderService = await new PuppeteerService().init()
+        await customerOrderService.accessStore(openCartConfig.url)
+
+        order.items.forEach(item => {
+            const itemName = item.itemName
+            const itemCategory = item.category
+            const itemSubCategory = item.subCategory ?? undefined
+            const itemOptions = item.itemOptions
+            customerOrderService.addItemToCart(itemName, itemCategory, itemSubCategory, itemOptions)
+        })
+
+        await customerOrderService.checkout(order)
+
+        const latestOrderId = await customerOrderService.fetchLatestOrderId()
+        customerOrderResult = {
+            orderId: order.orderId,
+            externalOrderId: latestOrderId,
         }
-        // access store
-        // for each item in order
-        //   browse to item
-        //   add item to cart
-        // checkout
 
         return customerOrderResult
     }
 
     static validateOrder(order: CustomerOrder): ValidationResult {
-        let validationResult: ValidationResult = {
+        let orderValidationResult: ValidationResult = {
             isValid: true,
             message: null,
         }
 
-        // for each item in order
-        //   validateOrderItem
-        //   (if invalid, invalidate all then exit loop)
+        for (const item of order.items) {
+            const itemValidationResult = CustomerOrderFacade.validateOrderItem(item)
+            if (!itemValidationResult.isValid) {
+                orderValidationResult.isValid = false
+                orderValidationResult.message = `item with itemName ${item.itemName} in order is not valid: ${itemValidationResult.message}`
+                break
+            }
+        }
 
-        return validationResult
+        return orderValidationResult
     }
 
     static validateOrderItem(orderItem: OrderItem): ValidationResult {
@@ -57,13 +75,36 @@ export class CustomerOrderFacade {
             message: null,
         }
 
+        let categoryIsValid: boolean = false
+        let subCategoryIsValid: boolean = true
+        let itemNameIsValid: boolean = true
+
         //   check valid category
+        for (const categorySet of openCartItemCategories) {
+            if (categorySet.category === orderItem.category) {
+                categoryIsValid = true
+            }
+        }
+        if (!categoryIsValid) {
+            validationResult.isValid = false
+            validationResult.message = `category for order item with name ${orderItem.itemName} is invalid`
+        }
+
         //   check valid subcategory
+        if (categoryIsValid && !!orderItem.subCategory) {
+            const categorySubCategories = openCartItemCategories
+                .filter(element => element.category === orderItem.category)
+                .map(element => element.subcategories)[0]
+
+            if (categorySubCategories.length === 0 || !categorySubCategories.includes(orderItem.subCategory)) {
+                validationResult.isValid = false
+                validationResult.message = `subcategory for order item with name ${orderItem.itemName} is invalid`
+            }
+        }
+
         //   check valid name
-        //   (if invalid, invalidate)
+        //   (item names are not being pulled from the online store, so this passes automatically)
 
         return validationResult
     }
 }
-
-// TODO: use this facade to tie the controller to the Puppeteer service
