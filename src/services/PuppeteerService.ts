@@ -83,12 +83,19 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
 
         // click through to item listing page
         if (!!item_subcategory) {
+            console.log(`item ${item_name} has subcategory ${item_subcategory}`);
             // target/click subcategory nav
             await categoryNav.hover()
             const subCategoryXPath = this.subCategoryXPath(item_subcategory)
+            console.log(`subCategoryXPath:`, subCategoryXPath);
             const subCategoryNav = (await this.page.$x(subCategoryXPath))[0]
-            await subCategoryNav.click()
+            // await this.page.evaluate(element => element.click(), subCategoryNav)
+            await Promise.all([
+                this.page.waitForNavigation(),
+                await subCategoryNav.click()
+            ])
         } else {
+            console.log(`item ${item_name} has no subcategory`);
             // click category nav
             await Promise.all([
                 this.page.waitForNavigation(),
@@ -133,7 +140,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
             await this.page.waitForSelector('#button-login')
             console.log(`login button seen`);
             const loginButton = (await this.page.$x(this.loginButtonXPath()))[0]
-            console.log(`loginButton:`, loginButton);
+            // console.log(`loginButton:`, loginButton);
             await this.page.type('#input-email', openCartConfig.loginEmail)
             await this.page.type('#input-password', openCartConfig.loginPassword)
             await this.page.evaluate(element => element.click(), loginButton)
@@ -160,7 +167,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.page.select('#input-payment-zone', matchedStateValue)
         console.log(`payment zone selected`);
         const buttonPaymentAddress = (await this.page.$x(".//*[@id='button-payment-address']"))[0]
-        console.log(`payment button:`, buttonPaymentAddress);
+        // console.log(`payment button:`, buttonPaymentAddress);
         await this.page.evaluate(element => element.click(), buttonPaymentAddress)
         console.log(`payment address button clicked`);
         // await this.page.click('#button-payment-address')
@@ -189,7 +196,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
             await shippingMethodComments.type(order.deliveryNotes)
         }
         const buttonShippingMethod = (await this.page.$x(".//*[@id='button-shipping-method']"))[0]
-        console.log(`buttonShippingMethod:`, buttonShippingMethod);
+        // console.log(`buttonShippingMethod:`, buttonShippingMethod);
         await this.page.waitForTimeout(3000)
         await this.page.evaluate(element => element.click(), buttonShippingMethod)
         console.log(`buttonShippingMethod clicked`);
@@ -198,8 +205,10 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         // fill out payment method
         let paymentMethodXPath: string
         if (order.paymentMethod === PaymentMethodEnum.BANK) {
+            console.log(`payment method is BANK`);
             paymentMethodXPath = this.paymentMethodBankXPath()
         } else if (order.paymentMethod === PaymentMethodEnum.CASH) {
+            console.log(`payment method is CASH`);
             paymentMethodXPath = this.paymentMethodCashXPath()
         } else {
             throw new Error(`payment method is not valid (${order.paymentMethod}`)
@@ -281,11 +290,17 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
     }
 
     async allOrderItemsPresent (order: CustomerOrder): Promise<boolean> {
+        console.log(`allOrderItemsPresent called for order items`, order.items);
+        // TODO: this looks like the wrong XPath.
+        // TODO: also there are suddenly 17 items in the cart when we hit the checkout? Yeah, logging in recalls the existing items.
+        // TODO: Login and clear the cart before every order? OR create a command line prompt to remind.
         const orderConfirmItemsXPath = this.orderConfirmItemsXPath()
         await this.page.waitForXPath(orderConfirmItemsXPath)
-        const itemsInOrderTable = await this.page.$x(this.orderConfirmItemsXPath())
+        const itemsInOrderTable = await this.page.$x(orderConfirmItemsXPath)
         // confirm item count
         if (order.items.length != itemsInOrderTable.length) {
+            console.log(`order.items.length (${order.items.length}) does not equal ${itemsInOrderTable.length}`);
+            console.log(`itemsInOrderTable:`, itemsInOrderTable);
             return false
         }
         // confirm item presence
@@ -413,6 +428,36 @@ const sampleOrder = {
 ],
 }
 
+export const SampleOrder2 = {
+    "orderId": "ord_123",
+    "customerFirstName": "Jeffrey",
+    "customerLastName": "Martinez",
+    "customerAddress": "887 Cedar Lane",
+    "customerCity": "Cambridge",
+    "customerState": "MA",
+    "customerZip": "02141",
+    "deliveryNotes": null,
+    "paymentMethod": PaymentMethodEnum.CASH,
+    "paymentNotes": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e iusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "items": [
+        {
+            "category": "Phones & PDAs",
+            "subCategory": null,
+            "itemName": "iPhone"
+        },
+        {
+            "category": "Tablets",
+            "subCategory": null,
+            "itemName": "Samsung Galaxy Tab 10.1"
+        },
+        {
+            "category": "Components",
+            "subCategory": "Monitors",
+            "itemName": "Samsung SyncMaster 941BW"
+        }
+    ]
+}
+
 export type StateMatcherElement = {
     value: string,
     stateName: string,
@@ -424,6 +469,7 @@ export type StateMatcherElement = {
 // TODO: run from outside the service provider
 
 export const main = async (): Promise<void> => {
+    // const sampleOrder = SampleOrder2
     const puppeteerService = await new PuppeteerService().init()
     await puppeteerService.accessStore(openCartConfig.url)
     await puppeteerService.addItemToCart(sampleOrder.items[0].itemName, sampleOrder.items[0].category, sampleOrder.items[0].subCategory)

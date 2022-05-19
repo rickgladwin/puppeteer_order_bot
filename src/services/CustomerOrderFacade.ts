@@ -32,13 +32,13 @@ export class CustomerOrderFacade {
         const customerOrderService = await new PuppeteerService().init()
         await customerOrderService.accessStore(openCartConfig.url)
 
-        order.items.forEach(item => {
+        for (const item of order.items) {
             const itemName = item.itemName
             const itemCategory = item.category
             const itemSubCategory = item.subCategory ?? undefined
             const itemOptions = item.itemOptions
-            customerOrderService.addItemToCart(itemName, itemCategory, itemSubCategory, itemOptions)
-        })
+            await customerOrderService.addItemToCart(itemName, itemCategory, itemSubCategory, itemOptions)
+        }
 
         await customerOrderService.checkout(order)
 

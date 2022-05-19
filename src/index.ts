@@ -18,14 +18,18 @@ export const main = async (): Promise<void> => {
             console.error(`error placing order: ${e.message}`)
             process.exit(1)
         }
+        console.log(`orderResult:`, orderResult);
         orderResults.push(orderResult)
     }
 
     console.log(`All orders placed. Order results:`)
     console.dir(orderResults, {depth: 2})
+    return
 }
 
 // call main() if index module is called directly
 if (require.main === module) {
-    main().then(r => {console.log(`done. ${r}`)})
+    main()
+        .then(r => {console.log(`done. ${r}`)})
+        .then(r => {process.exit()})
 }
