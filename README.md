@@ -155,9 +155,13 @@ but neither is there a public-facing use case nor long-term maintenance, so they
 - Complete error handling for all cases vs error handling for the most common or critical cases.
 
 ### What I would change
-- more test coverage, including some level of mocking for OpenCart itself, though the functionality
+- More test coverage, including some level of mocking for OpenCart itself, though the functionality
 of the app is so coupled to the target web store, using a test account for the live store might
-be most appropriate
+be most appropriate. I've used a "yellow-red-green-refactor" pattern for test writing, which involves
+writing the spec/requirements as `todo` or `skipped` test descriptions, writing the critical test code
+right away, and writing the remaining tests as soon as possible. This accommodates the realities of
+time constraints as well as allowing for a shifting spec during development without having to rewrite
+code twice (spec and implementation).
 - Some form of logging of order runs and results in a persistence layer, most likely a set of files, rather
 than simply console output
 - In concert with the previous point, a way of controlling and configuring the logging itself (including
