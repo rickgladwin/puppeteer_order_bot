@@ -235,14 +235,44 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
     }
 
     async alreadyLoggedIn(): Promise<boolean> {
+        // look for a nav item containing "Login"
         const myAccountLoginXPath = this.myAccountLoginXPath()
-        const myAccountLogin = await this.page.$x(myAccountLoginXPath)
-        return myAccountLogin.length === 0
+        let myAccountLogin
+        try {
+            myAccountLogin = await this.page.$x(myAccountLoginXPath)
+        } catch (e: any) {
+            console.log(`myAccountLogin error caught:`, e.message);
+            return true
+        }
+
+        if (myAccountLogin.length > 0) {
+            return false
+        }
+
+        if (myAccountLogin.length === 0) {
+            return true
+        }
+
+        throw new Error(`can't determine login status`)
     }
 
     async fetchLatestOrderId(): Promise<string> {
+        console.log(`fetchLatestOrderId called`);
         await this.ensureInit()
-        await this.page.goto(openCartConfig.accountOrdersUrl)
+        let alreadyLoggedIn: boolean
+
+        alreadyLoggedIn = await this.alreadyLoggedIn()
+
+        // const alreadyLoggedIn = await this.alreadyLoggedIn()
+        console.log(`alreadyLoggedIn when fetching order id:`, alreadyLoggedIn);
+        console.log(`init ensured. going to ${openCartConfig.accountOrdersUrl}`);
+        try {
+            await this.page.waitForTimeout(3000)
+            await this.page.goto(openCartConfig.accountOrdersUrl)
+        } catch (e: any) {
+            console.log(`could not navigate:`, e.message);
+        }
+        console.log(`goto complete to ${openCartConfig.accountOrdersUrl}`);
         const latestAccountOrderIdXPath = this.latestAccountOrderIdXPath()
         await this.page.waitForXPath(latestAccountOrderIdXPath)
         const latestOrderIdElement = (await this.page.$x(latestAccountOrderIdXPath))[0]
@@ -404,5 +434,5 @@ export const main = async (): Promise<void> => {
 
 // perform the sample run if the PuppeteerService module is called directly
 if (require.main === module) {
-    main().then(r => {console.log(`done.`, r); process.exit(0);})
+    main().then(r => {console.log(`done.`, r)})
 }
