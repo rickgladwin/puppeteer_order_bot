@@ -1,6 +1,4 @@
 // main app file
-import { config } from './startup'
-import { PuppeteerService } from "./services/PuppeteerService";
 import { CustomerOrderController } from "./controllers/CustomerOrderController";
 import { CustomerOrder } from "./entities/CustomerOrder";
 import { importCustomerOrders } from "./usecases/ImportCustomerOrderPayload";

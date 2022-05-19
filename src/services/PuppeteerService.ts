@@ -4,7 +4,6 @@ import { ItemOption } from "../entities/OrderItem";
 import { CustomerOrderServiceInterface } from "./CustomerOrderFacade";
 import { CustomerOrder, PaymentMethodEnum } from "../entities/CustomerOrder";
 import stateValueMatcher from "../data/OpenCartPaymentStateValues.json"
-import { CustomerOrderResult } from "../entities/CustomerOrderResult";
 
 const puppeteerOptions = {
     headless: false,
@@ -106,21 +105,40 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
             this.page.waitForNavigation(),
             await itemLink.click()
         ])
-
-        // TODO: finish PuppeteerService module
-        // TODO: update the controller/facade to make use of this service
     }
 
     async checkout (order: CustomerOrder): Promise<void> {
         await this.ensureInit()
         // goto checkout page
+        console.log(`going to checkout page`);
         await this.page.goto(openCartConfig.checkoutUrl)
 
-        // fill out Returning Customer login form
-        await this.page.waitForSelector('#button-login')
-        await this.page.type('#input-email', openCartConfig.loginEmail)
-        await this.page.type('#input-password', openCartConfig.loginPassword)
-        await this.page.click('#button-login')
+        // check for existing login
+        // const checkoutOptionPanelContentXPath = this.checkoutOptionPanelContentXPath()
+        // await this.page.waitForXPath(checkoutOptionPanelContentXPath)
+        // console.log(`checkout option panel seen`);
+        // const checkoutOptionPanelContent = (await this.page.$x(checkoutOptionPanelContentXPath))[0]
+        // console.log(`checkoutOptionPanelContent:`, checkoutOptionPanelContent);
+        // const panelContentClassList = await this.page.evaluate(element => element.classList, checkoutOptionPanelContent)
+        // console.log(`panelContentClassList:`, panelContentClassList);
+        // const alreadyLoggedIn = !Object.values(panelContentClassList).includes('in')
+        // console.log(`alreadyLoggedIn:`, alreadyLoggedIn);
+        // const alreadyLoggedIn = await this.page.evaluate(element => element.classList.includes('collapse'), checkoutOptionPanelContent)
+
+        const alreadyLoggedIn = await this.alreadyLoggedIn()
+
+        if (!alreadyLoggedIn) {
+            console.log(`not already logged in`);
+            // fill out Returning Customer login form
+            await this.page.waitForSelector('#button-login')
+            console.log(`login button seen`);
+            const loginButton = (await this.page.$x(this.loginButtonXPath()))[0]
+            console.log(`loginButton:`, loginButton);
+            await this.page.type('#input-email', openCartConfig.loginEmail)
+            await this.page.type('#input-password', openCartConfig.loginPassword)
+            await this.page.evaluate(element => element.click(), loginButton)
+            console.log(`login button clicked`);
+        }
 
         // fill out new billing address
         await this.page.waitForSelector('#button-payment-address')
@@ -135,12 +153,21 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.page.type('#input-payment-postcode', order.customerZip)
         await this.page.select('#input-payment-country', "223") // United States
         const matchedStateValue = this.inputPaymentZoneValue(order)
-        console.log(`matchedStateValue: ${matchedStateValue}`);
+        console.log(`matchedStateValue: ${matchedStateValue}`, typeof matchedStateValue);
+        await this.page.waitForSelector('#input-payment-zone')
+        await this.page.waitForTimeout(3000)
+        console.log(`payment zone selector seen`);
         await this.page.select('#input-payment-zone', matchedStateValue)
-        await this.page.click('#button-payment-address')
+        console.log(`payment zone selected`);
+        const buttonPaymentAddress = (await this.page.$x(".//*[@id='button-payment-address']"))[0]
+        console.log(`payment button:`, buttonPaymentAddress);
+        await this.page.evaluate(element => element.click(), buttonPaymentAddress)
+        console.log(`payment address button clicked`);
+        // await this.page.click('#button-payment-address')
 
         // fill out new delivery address
         await this.page.waitForSelector('#button-shipping-address')
+        console.log(`button shipping address seen`);
         const newDeliveryAddressRadioXPath = this.newDeliveryAddressRadioXPath();
         await (await this.page.$x(newDeliveryAddressRadioXPath))[0].click()
         await this.page.type('#input-shipping-firstname', order.customerFirstName)
@@ -155,12 +182,18 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
 
         // fill out delivery method/details
         await this.page.waitForSelector('#button-shipping-method')
+        console.log(`buttonShippingMethod seen`);
         if (!!order.deliveryNotes) {
             const shippingMethodCommentsXPath = this.shippingMethodCommentsXPath();
             const shippingMethodComments = (await this.page.$x(shippingMethodCommentsXPath))[0];
             await shippingMethodComments.type(order.deliveryNotes)
         }
-        await this.page.click('#button-shipping-method')
+        const buttonShippingMethod = (await this.page.$x(".//*[@id='button-shipping-method']"))[0]
+        console.log(`buttonShippingMethod:`, buttonShippingMethod);
+        await this.page.waitForTimeout(3000)
+        await this.page.evaluate(element => element.click(), buttonShippingMethod)
+        console.log(`buttonShippingMethod clicked`);
+        // await this.page.click('#button-shipping-method')
 
         // fill out payment method
         let paymentMethodXPath: string
@@ -191,11 +224,20 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
 
         // confirm order
         await this.page.waitForSelector('#button-confirm')
+        const buttonConfirm = (await this.page.$('#button-confirm'))
         const allItemsPresent = await this.allOrderItemsPresent(order)
         if (!allItemsPresent) {
             throw new Error(`not all customer order items appear in the confirm order table`)
         }
-        await this.page.click('#button-confirm')
+        await this.page.evaluate(element => element.click(), buttonConfirm)
+
+        // await this.page.click('#button-confirm')
+    }
+
+    async alreadyLoggedIn(): Promise<boolean> {
+        const myAccountLoginXPath = this.myAccountLoginXPath()
+        const myAccountLogin = await this.page.$x(myAccountLoginXPath)
+        return myAccountLogin.length === 0
     }
 
     async fetchLatestOrderId(): Promise<string> {
@@ -271,6 +313,18 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
     // checkoutLinkXPath (): string {
     //     return ".//a/strong[contains(text(),'Checkout')]"
     // }
+
+    checkoutOptionPanelContentXPath (): string {
+        return ".//*[@id='collapse-checkout-option']"
+    }
+
+    myAccountLoginXPath (): string {
+        return ".//*[@id='top-links']//a[contains(text(),'Login')]"
+    }
+
+    loginButtonXPath (): string {
+        return ".//input[@id='button-login']"
+    }
 
     newBillingAddressRadioXPath (): string {
         return ".//input[@name='payment_address'][@value='new']"
@@ -350,5 +404,5 @@ export const main = async (): Promise<void> => {
 
 // perform the sample run if the PuppeteerService module is called directly
 if (require.main === module) {
-    main().then(r => {console.log(`done.`, r)})
+    main().then(r => {console.log(`done.`, r); process.exit(0);})
 }
