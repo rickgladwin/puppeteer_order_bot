@@ -175,6 +175,16 @@ etc.) or make use of an order id API.
 be thrown within async function calls, and error handling could be subject to test coverage as well.
 - A CI pipeline with automated testing, if the app were bound for production and/or if there were
 multiple developers working on it.
+- The `checkout()` function on the `PuppeteerService` class is too long (over 100 lines). I would extract
+the individual checkout steps to their own functions.
+- I decided to use the default (latest available) version of Chromium that's bundled with Puppeteer.
+If this app were maintained in the long term, I'd add a puppeteer configuration so that Chromium would
+be a separate dependency, independently configured, and the puppeteer package would depend on it.
+- There's a TODO remaining in the code. It's generally considered bad form to leave TODO comments in
+code that gets pushed to a shared repo, unless the team has agreed collectively that TODO comments are
+a helpful and efficient part of the development practice. I left this one in since it marks out a
+known issue (the app fails if there are existing items in the user's cart when the app is run) and
+the place in the code where it should be fixed.
 
 ### Time and resources
 The app in its current form took 15-20 hours. A simpler bot with less structure and fewer edge cases covered

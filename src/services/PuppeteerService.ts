@@ -225,8 +225,6 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
             throw new Error(`not all customer order items appear in the confirm order table`)
         }
         await this.page.evaluate(element => element.click(), buttonConfirm)
-
-        // await this.page.click('#button-confirm')
     }
 
     async alreadyLoggedIn(): Promise<boolean> {
