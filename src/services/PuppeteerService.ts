@@ -120,18 +120,6 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         console.log(`going to checkout page`);
         await this.page.goto(openCartConfig.checkoutUrl)
 
-        // check for existing login
-        // const checkoutOptionPanelContentXPath = this.checkoutOptionPanelContentXPath()
-        // await this.page.waitForXPath(checkoutOptionPanelContentXPath)
-        // console.log(`checkout option panel seen`);
-        // const checkoutOptionPanelContent = (await this.page.$x(checkoutOptionPanelContentXPath))[0]
-        // console.log(`checkoutOptionPanelContent:`, checkoutOptionPanelContent);
-        // const panelContentClassList = await this.page.evaluate(element => element.classList, checkoutOptionPanelContent)
-        // console.log(`panelContentClassList:`, panelContentClassList);
-        // const alreadyLoggedIn = !Object.values(panelContentClassList).includes('in')
-        // console.log(`alreadyLoggedIn:`, alreadyLoggedIn);
-        // const alreadyLoggedIn = await this.page.evaluate(element => element.classList.includes('collapse'), checkoutOptionPanelContent)
-
         const alreadyLoggedIn = await this.alreadyLoggedIn()
 
         if (!alreadyLoggedIn) {
@@ -167,10 +155,8 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
         await this.page.select('#input-payment-zone', matchedStateValue)
         console.log(`payment zone selected`);
         const buttonPaymentAddress = (await this.page.$x(".//*[@id='button-payment-address']"))[0]
-        // console.log(`payment button:`, buttonPaymentAddress);
         await this.page.evaluate(element => element.click(), buttonPaymentAddress)
         console.log(`payment address button clicked`);
-        // await this.page.click('#button-payment-address')
 
         // fill out new delivery address
         await this.page.waitForSelector('#button-shipping-address')
@@ -291,9 +277,8 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
 
     async allOrderItemsPresent (order: CustomerOrder): Promise<boolean> {
         console.log(`allOrderItemsPresent called for order items`, order.items);
-        // TODO: this looks like the wrong XPath.
-        // TODO: also there are suddenly 17 items in the cart when we hit the checkout? Yeah, logging in recalls the existing items.
-        // TODO: Login and clear the cart before every order? OR create a command line prompt to remind.
+        // TODO: Login and clear the cart before every order
+        //  OR create a command line prompt to remind.
         const orderConfirmItemsXPath = this.orderConfirmItemsXPath()
         await this.page.waitForXPath(orderConfirmItemsXPath)
         const itemsInOrderTable = await this.page.$x(orderConfirmItemsXPath)
@@ -408,7 +393,7 @@ export class PuppeteerService implements CustomerOrderServiceInterface {
     }
 }
 
-const sampleOrder = {
+const sampleOrder1 = {
 "orderId": "ord_123",
 "customerFirstName": "Jeffrey",
 "customerLastName": "Martinez",
@@ -428,7 +413,7 @@ const sampleOrder = {
 ],
 }
 
-export const SampleOrder2 = {
+export const sampleOrder2 = {
     "orderId": "ord_123",
     "customerFirstName": "Jeffrey",
     "customerLastName": "Martinez",
@@ -465,11 +450,8 @@ export type StateMatcherElement = {
 }
 
 // sample run
-// TODO: build order result objects
-// TODO: run from outside the service provider
-
 export const main = async (): Promise<void> => {
-    // const sampleOrder = SampleOrder2
+    const sampleOrder = sampleOrder1
     const puppeteerService = await new PuppeteerService().init()
     await puppeteerService.accessStore(openCartConfig.url)
     await puppeteerService.addItemToCart(sampleOrder.items[0].itemName, sampleOrder.items[0].category, sampleOrder.items[0].subCategory)

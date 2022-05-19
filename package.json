@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/rickgladwin/puppeteer_order_bot#readme",
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.2",
     "@types/jest": "^27.5.1",
     "jest": "^28.1.0",
     "jest-puppeteer": "^6.1.0",
