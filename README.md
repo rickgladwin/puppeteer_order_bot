@@ -1,5 +1,9 @@
 # puppeteer_order_bot
-A bot based on Puppeteer to make orders through a web store
+A bot based on Puppeteer to make orders through a web store 
+
+Currently set up for OpenCart, but other stores can be added by adding a configuration 
+to the `PuppeteerService` module and updating the `CustomerOrderFacade` module to use 
+the new configuration.
 
 ## Installation
 
