@@ -32,7 +32,7 @@ or `production.yaml`)
 and exports a `config` object, available for import anywhere in the app.
 
 ## Run
-*NOTE:* The code assumes a currently empty cart for the test user (e.g. test@rupahealth.com), and
+*NOTE:* The code assumes a currently empty cart for the test user, and
 does not, as of 2022-05-19, prompt the user on the command line to ensure this condition, nor does
 it automatically clear existing items in the test user's cart. When running the app, the user should
 first ensure that the test user's cart is empty. The app will throw an error during checkout if the items
