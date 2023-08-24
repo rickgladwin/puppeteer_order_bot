@@ -54,7 +54,7 @@ using `node dist/index.js`
 The `PuppeteerService` module can be run directly for manual testing purposes. 
 It uses the `if (require.main === module) {...}` method to isolate its `main()` function when
 the module is not being run directly. In production the `main()` function and sample code can be
-removed without consequence.
+removed without consequence. This is equivalent to Python's `if __name__ == '__main__':` pattern.
 
 ## Test
 
